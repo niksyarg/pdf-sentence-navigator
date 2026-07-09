@@ -1,0 +1,17 @@
+{
+  "name": "pdf-sentence-navigator-pro",
+  "version": "1.0.0",
+  "description": "Chrome Extension for navigating PDF sentences using TAB and SHIFT+TAB with PDF.js and Background Script",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "chrome-extension",
+    "manifest-v3",
+    "pdf.js",
+    "navigator"
+  ],
+  "author": "",
+  "license": "ISC"
+}

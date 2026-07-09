@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "PDF Sentence Navigator Pro",
+  "version": "1.0.0",
+  "description": "Navigate through sentences in PDF viewer using TAB and SHIFT+TAB.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*.pdf*",
+        "https://*/*.pdf*",
+        "file://*/*.pdf*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
