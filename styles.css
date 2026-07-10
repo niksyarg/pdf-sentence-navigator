@@ -1,0 +1,29 @@
+#pdf-container {
+  position: relative;
+  display: inline-block;
+}
+
+.textLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  line-height: 1;
+}
+
+
+.textLayer > span {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+
+.active-sentence {
+  background-color: rgba(255, 235, 59, 0.4);
+  border-radius: 3px;
+}

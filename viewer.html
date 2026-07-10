@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Sentence Navigator</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="pdf.min.js"></script>
+</head>
+<body>
+  
+  <div style="padding: 15px; background: #f0f0f0; border-bottom: 1px solid #ccc;">
+    <label for="pdf-upload" style="margin-right: 10px; font-family: sans-serif; font-size: 14px; cursor: pointer;">
+      ატვირთე PDF ლოკალურად:
+    </label>
+    <input type="file" id="pdf-upload" accept="application/pdf" title="აირჩიეთ PDF ფაილი" />
+  </div>
+
+  <div id="pdf-container" style="position: relative; margin-top: 20px;">
+    <canvas id="pdf-render"></canvas>
+    <div id="text-layer" class="textLayer"></div>
+  </div>
+
+  <script src="content.js"type="module"></script>
+</body>
+</html>

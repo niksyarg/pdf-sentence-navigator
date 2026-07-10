@@ -1,58 +1,131 @@
-let sentences = [];
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
+
+const pdfContainer = document.getElementById('pdf-container');
+
+let textElements = []; 
 let currentIndex = -1;
 
-function initPDFNavigator() {
-  const rawText = document.body.innerText || "";
-  if (rawText.trim().length > 0) {
-    sentences = (rawText.match(/[^.!?\n]+[.!?\n]+/g) || [rawText])
-      .map(s => s.trim())
-      .filter(s => s.length > 5);
-    console.log(`Local PDF.js Parser: ჩაიტვირთა ${sentences.length} წინადადება.`);
-  }
-}
+function loadPDF(pdfSource) {
+  if (!pdfContainer) return;
 
-function highlightSentence(index) {
-  if (index < 0 || index >= sentences.length) return;
-  const targetText = sentences[index];
+  pdfContainer.innerHTML = '';
+  textElements = [];
+  currentIndex = -1;
 
-  window.getSelection().removeAllRanges();
-  const found = window.find(targetText, false, false, true, false, true, false);
-  
-  if (found) {
-    currentIndex = index;
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      window.scrollTo({
-        top: window.scrollY + rect.top - window.innerHeight / 2,
-        behavior: 'smooth'
-      });
+  pdfjsLib.getDocument(pdfSource).promise.then(pdf => {
+    console.log(`PDF ჩაიტვირთა. სულ ${pdf.numPages} გვერდი.`);
+    
+    let renderChain = Promise.resolve();
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      renderChain = renderChain.then(() => renderPage(pdf, pageNum));
     }
-  }
+  }).catch(error => {
+    console.error("შეცდომა PDF-ის დამუშავებისას:", error);
+  });
 }
 
+function renderPage(pdf, pageNum) {
+  return pdf.getPage(pageNum).then(page => {
+    const scale = 1.5;
+    const viewport = page.getViewport({ scale: scale });
 
-window.addEventListener("keydown", (event) => {
-  if (event.key === "Tab") {
+    const pageWrapper = document.createElement('div');
+    pageWrapper.style.position = 'relative';
+    pageWrapper.style.width = viewport.width + 'px';
+    pageWrapper.style.height = viewport.height + 'px';
+    pageWrapper.style.marginBottom = '25px'; 
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    const textLayer = document.createElement('div');
+    textLayer.className = 'textLayer';
+    textLayer.style.width = viewport.width + 'px';
+    textLayer.style.height = viewport.height + 'px';
+
+    pageWrapper.appendChild(canvas);
+    pageWrapper.appendChild(textLayer);
+    pdfContainer.appendChild(pageWrapper);
+
+    const renderContext = {
+      canvasContext: context,
+      viewport: viewport
+    };
+
+    return page.render(renderContext).promise.then(() => {
+      return page.getTextContent();
+    }).then(textContent => {
+      textContent.items.forEach(item => {
+        if (item.str.trim().length > 0) {
+          const span = document.createElement('span');
+          span.textContent = item.str;
+
+          const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+          const fontHeight = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
+
+          span.style.left = tx[4] + 'px';
+          span.style.top = (tx[5] - fontHeight) + 'px';
+          span.style.fontSize = fontHeight + 'px';
+          span.style.fontFamily = item.fontName || 'sans-serif';
+
+          textLayer.appendChild(span);
+          textElements.push(span);
+        }
+      });
+    });
+  });
+}
+
+document.getElementById('pdf-upload')?.addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const fileReader = new FileReader();
+  fileReader.onload = function(e) {
+    const typedarray = new Uint8Array(e.target.result);
+    loadPDF({ data: typedarray });
+  };
+  fileReader.readAsArrayBuffer(file);
+});
+
+document.addEventListener('keydown', (event) => {
+  if (textElements.length === 0) return;
+
+  if (event.key === 'Tab') {
     event.preventDefault();
-    event.stopPropagation();
-
-    if (sentences.length === 0) initPDFNavigator();
-    if (sentences.length === 0) return;
 
     if (event.shiftKey) {
-      if (currentIndex > 0) currentIndex--;
-      else currentIndex = sentences.length - 1;
+      currentIndex = (currentIndex > 0) ? currentIndex - 1 : textElements.length - 1;
     } else {
-      if (currentIndex < sentences.length - 1) currentIndex++;
-      else currentIndex = 0;
+      currentIndex = (currentIndex < textElements.length - 1) ? currentIndex + 1 : 0;
     }
 
-    highlightSentence(currentIndex);
+    highlightActiveElement();
   }
-}, true);
-
-window.addEventListener("load", () => {
-  setTimeout(initPDFNavigator, 1500);
 });
+
+function highlightActiveElement() {
+  document.querySelectorAll('.active-sentence').forEach(el => {
+    el.classList.remove('active-sentence');
+  });
+
+  if (currentIndex >= 0 && currentIndex < textElements.length) {
+    const activeSpan = textElements[currentIndex];
+    activeSpan.classList.add('active-sentence');
+    activeSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function checkUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const pdfUrl = urlParams.get('url');
+  
+  if (pdfUrl) {
+    console.log("აღმოჩენილია გადამისამართებული ლინკი:", pdfUrl);
+    loadPDF(pdfUrl);
+  }
+}
+
+checkUrlParams();
